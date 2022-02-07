@@ -63,8 +63,6 @@ foo@bar:~$
 ```
 6. Através do terminal, acesse a pasta clonada (ou descompactada) e rode o comando *serverless deploy*.
 > **Obs**: Antes de executar o passo 6, deve-se estar ciente de que o comando pode falhar por já haver um bucket com o mesmo nome do bucket configurado no arquivo *serverless.yml*. Neste caso, altere o nome do bucket neste arquivo e no arquivo *handlerGI.py* para a correta execução da aplicação.
-
-&nbsp;
  
 ```console
 foo@bar:~$ serverless deploy
@@ -72,6 +70,7 @@ Executando o Serverless
 ...
 foo@bar:~$ 
 ```
+
 7. Após concluído, acesse o serviço S3 da AWS e, na bucket configurada (kalingcket), crie uma pasta chamada uploads. Nesta pasta que deverão ser armazenadas as imagens.
 8. Após a conclusão destes passos, pode começar a utilizar a aplicação conforme foi requisitada. :smiley:
 
