@@ -16,7 +16,7 @@ A aplicação será formada pelas seguintes funções utilizando o serviço AWS 
 
 ---
 
-![Screenshot](serverless_arch.png)
+![Screenshot](Imagens/serverless_arch.png)
 
 ### Bibliotecas Utilizadas:
 * **json**: Utilizada para formatar a resposta contida no body da response entregue ao API Gateway.
