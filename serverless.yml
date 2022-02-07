@@ -1,0 +1,139 @@
+service: serverless-challenge
+
+frameworkVersion: '3'
+
+package:
+  individually: true
+  patterns:
+    - '!serverless_arch.png'
+    - '!README.md'
+
+provider:
+  name: aws
+  runtime: python3.8
+  region: sa-east-1
+  stage: dev
+  environment:
+    DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+  apiGateway:
+    binaryMediaTypes:
+      - '*/*'
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
+        - Effect: Allow
+          Action:
+            - s3:GetObject
+          Resource: "arn:aws:s3:::${self:functions.extractMetadata.environment.bucket}/uploads/*"
+
+
+functions:
+  extractMetadata:
+    handler: handlerEMD.extractMetadata
+    description: "Extrai metadados das imagens que são carregadas na pasta /uploads/ do Bucket ${self:functions.extractMetadata.environment.bucket} e os armazena em uma tabela do DynamoDB."
+    memorySize: 128
+    timeout: 30
+    environment:
+      bucket: kalingcket
+    layers:
+      - arn:aws:lambda:sa-east-1:770693421928:layer:Klayers-python38-Pillow:15 # Adição da Biblioteca Pillow à função lambda extractMetadata.
+    events:
+      - s3:
+          bucket: ${self:functions.extractMetadata.environment.bucket}
+          event: s3:ObjectCreated:*
+          rules:
+            - prefix: uploads/
+            - suffix: .jpg
+      - s3:
+          bucket: ${self:functions.extractMetadata.environment.bucket}
+          event: s3:ObjectCreated:*
+          rules:
+            - prefix: uploads/
+            - suffix: .png
+      - s3:
+          bucket: ${self:functions.extractMetadata.environment.bucket}
+          event: s3:ObjectCreated:*
+          rules:
+            - prefix: uploads/
+            - suffix: .gif
+      - s3:
+          bucket: ${self:functions.extractMetadata.environment.bucket}
+          event: s3:ObjectCreated:*
+          rules:
+            - prefix: uploads/
+            - suffix: .bmp
+    package:
+      patterns:
+        - '!handlerGMD.py'
+        - '!handlerGI.py'
+        - '!handlerII.py'
+  getMetadata:
+    handler: handlerGMD.getMetadata
+    description: "Retorna os metadados armazenados em uma tabela do DynamoDB a partir da chave do objeto."
+    memorySize: 128
+    timeout: 30
+    events:
+      - http:
+          path: images/{s3objectkey}
+          method: get
+          cors: true
+    package:
+      patterns:
+        - '!handlerEMD.py'
+        - '!handlerGI.py'
+        - '!handlerII.py'
+  getImage:
+    handler: handlerGI.getImage
+    description: "Retorna a imagem a partir de sua chave para download."
+    memorySize: 128
+    timeout: 30
+    events:
+      - http:
+          path: images/download/{s3objectkey}
+          method: get
+          cors: true
+    package:
+      patterns:
+        - '!handlerEMD.py'
+        - '!handlerGMD.py'
+        - '!handlerII.py'
+  infoImages:
+    handler: handlerII.infoImages
+    description: "Retorna um resumo do banco de dados."
+    memorySize: 128
+    timeout: 30
+    events:
+      - http:
+          path: summary/
+          method: get
+          cors: true
+    package:
+      patterns:
+        - '!handlerEMD.py'
+        - '!handlerGMD.py'
+        - '!handlerGI.py'
+
+resources:
+  Resources:
+    ImagesDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: s3objectkey
+            AttributeType: S
+        KeySchema:
+          - AttributeName: s3objectkey
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.DYNAMODB_TABLE}
